@@ -626,11 +626,12 @@
       return '<div class="room-barcol"><div class="room-barvalue tnum">'+N(pm[m]||0)+'</div><div class="room-bar'+(m===ultimo?' on':'')+'" style="height:'+Math.max(4,(pm[m]||0)/max*145)+'px"></div><div class="room-barlabel">'+mesCorto(m)+'</div></div>';
     }).join('')+'</div>';
     var insight=!actual?'No hay ventas en el rango seleccionado. Amplía el período para recuperar la lectura de tendencia.':
-      'El crecimiento llega a '+(delta===null?'un nuevo nivel':((delta>=0?'+':'')+delta+'%'))+', pero no es transversal: '+canalNom(motor)+' aporta '+(motorDelta>=0?'+':'')+N(motorDelta)+' ventas mientras '+canalNom(riesgo)+' '+(riesgoDelta<0?'resta '+N(Math.abs(riesgoDelta)):'aporta +'+N(riesgoDelta))+'.';
+      (F.canal?'Vista aislada de '+canalNom(F.canal)+': registra '+N(actual)+' ventas y '+(delta===null?'no tiene comparación previa':((delta>=0?'+':'')+delta+'% frente a '+mesCorto(anterior)))+'. Úsala para dimensionar el riesgo sin confundirlo con el resultado total.':
+      'El crecimiento llega a '+(delta===null?'un nuevo nivel':((delta>=0?'+':'')+delta+'%'))+', pero no es transversal: '+canalNom(motor)+' aporta '+(motorDelta>=0?'+':'')+N(motorDelta)+' ventas mientras '+canalNom(riesgo)+' '+(riesgoDelta<0?'resta '+N(Math.abs(riesgoDelta)):'aporta +'+N(riesgoDelta))+'.');
     $('tdHero').innerHTML='<div class="command-copy"><div class="command-eyebrow"><span class="live-dot"></span>Motor de crecimiento · '+mesLargo(ultimo)+'</div>'+
       '<div class="command-main"><div class="command-number tnum">'+(delta===null?'—':(delta>=0?'+':'')+delta+'%')+'</div><div class="command-unit">vs '+(anterior?mesCorto(anterior):'período previo')+'<br>'+N(actual)+' ventas</div></div>'+
       '<div class="command-delta'+(delta!==null&&delta<0?' down':'')+'">'+(racha>1?racha+' meses consecutivos al alza':'Cambio mensual')+'</div><div class="command-insight">'+insight+'</div>'+
-      '<div class="command-actions">'+(riesgo!=='—'?'<button class="command-action" id="tdRiskBtn">Aislar riesgo '+canalNom(riesgo)+'</button>':'')+'<button class="command-action primary" id="tdPatternBtn">Ver patrón ganador</button></div>'+
+      '<div class="command-actions">'+(!F.canal&&riesgo!=='—'?'<button class="command-action" id="tdRiskBtn">Aislar riesgo '+canalNom(riesgo)+'</button>':'')+'<button class="command-action primary" id="tdPatternBtn">Ver patrón ganador</button></div>'+
       '<div class="command-metrics"><div class="command-metric"><b>'+N(proy)+'</b><span>'+(metaOk?'Proyección · brecha '+(brecha>=0?'+':'')+N(brecha):'Ritmo del último mes')+'</span></div><div class="command-metric"><b>'+canalNom(motor)+'</b><span>Motor · '+topPct+'% del mes</span></div><div class="command-metric"><b>'+CLPc(recAct)+'</b><span>Recaudación global'+(recDelta===null?'':' · '+(recDelta>=0?'+':'')+recDelta+'%')+'</span></div></div></div>'+
       '<div class="command-visual"><div class="command-charttop"><div><small>Trayectoria mensual</small><b>'+(racha>1?racha+' meses consecutivos al alza':'Movimiento mensual')+'</b></div><span class="pace">'+(actual-previo>=0?'+':'')+N(actual-previo)+' ventas netas</span></div>'+bars+'<div class="room-caption">La recaudación es global y no cambia con filtros de clínica o canal.</div></div>';
     if($('tdRiskBtn'))$('tdRiskBtn').addEventListener('click',function(){F.canal=riesgo;render();});
@@ -1082,7 +1083,6 @@
     var fotoDe={},cargoDe={}; FOTOS.forEach(function(f){var k=norm(f.nombre).split(' ')[0];fotoDe[k]=f.foto;cargoDe[k]=f.cargo;});
     var nom={}; CX.forEach(function(v){nom[norm(v.ejecutiva)]=1;}); METAS.forEach(function(m){nom[norm(m.ejecutiva)]=1;});
     var lista=Object.keys(nom).filter(Boolean);
-    var metaEje=lista.length?Math.round(METACX/lista.length):0, metaEjeR=metaEje*n;
     var CXf=CX.filter(function(v){return v.fecha&&v.fecha.slice(0,7)>=F.desde&&v.fecha.slice(0,7)<=F.hasta;});
     function nvDe(nn){return CXf.filter(function(v){return norm(v.ejecutiva)===nn;}).length;}
     var totCX=lista.reduce(function(s,nn){return s+nvDe(nn);},0);
@@ -1092,14 +1092,7 @@
       var teamFechasCount=CXf.map(function(v){return v.fecha;}).filter(Boolean).sort();
       $('fCount').innerHTML='<b>'+N(totCX)+'</b> ventas registradas · '+etiqRango()+(teamFechasCount.length?' · cobertura '+teamFechasCount[0].slice(8,10)+'→'+teamFechasCount[teamFechasCount.length-1].slice(8,10):' · sin cobertura');
     }
-    $('eqKpis').innerHTML=[
-      {l:'Ventas',v:N(totCX),f:'registro interno · '+etiqRango(),a:1},
-      {l:'Meta',v:N(METACX*n),f:METACX+' al mes × '+n,r:1},
-      {l:'Cumplimiento',v:Math.round(totCX/((METACX*n)||1)*100)+'%',f:'de la FFVV Interna',c:totCX/((METACX*n)||1)>=0.9?'var(--good)':(totCX/((METACX*n)||1)>=0.5?'var(--warn)':'var(--crit)')},
-      {l:'Pólizas por cumplir',v:N(Math.max(0,METACX*n-totCX)),f:'para llegar a la meta'},
-      {l:'Ejecutivas',v:N(lista.length),f:'meta '+metaEjeR+' c/u en el rango'}
-    ].map(function(k){return '<div class="kpi'+(k.a?' accent':'')+'">'+(k.r?'<div class="rail"></div>':'')+
-      '<div class="lab">'+k.l+'</div><div class="val tnum"'+(k.c?' style="color:'+k.c+'"':'')+'>'+k.v+'</div><div class="foot">'+k.f+'</div></div>';}).join('');
+    $('eqKpis').innerHTML='';
 
     var teamDates=CXf.map(function(v){return v.fecha||'';}).filter(Boolean).sort(), teamLast=teamDates[teamDates.length-1]||'';
     var start7='';
