@@ -94,12 +94,17 @@
   .command-unit{font-size:15px;color:rgba(255,255,255,.68);padding-bottom:8px}.command-delta{display:inline-flex;align-items:center;width:max-content;margin-top:18px;padding:6px 11px;border-radius:20px;font-size:12.5px;font-weight:750;background:rgba(84,217,155,.15);color:#7EE8B5;border:1px solid rgba(126,232,181,.28)}
   .command-delta.down{background:rgba(255,119,119,.14);color:#FF9F9F;border-color:rgba(255,159,159,.25)}
   .command-insight{max-width:520px;margin-top:16px;font-size:15px;line-height:1.55;color:rgba(255,255,255,.82)}
+  .command-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.command-action{border:1px solid rgba(255,255,255,.24);border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.08);color:#fff;font-size:12px;font-weight:720}.command-action:hover{background:rgba(255,255,255,.16)}.command-action.primary{background:var(--gold);border-color:var(--gold);color:#16295C}
   .command-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:24px}.command-metric{padding:11px 12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.07);backdrop-filter:blur(8px)}
   .command-metric b{display:block;font-size:19px}.command-metric span{display:block;margin-top:3px;font-size:10.5px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
   .command-visual{display:flex;flex-direction:column;justify-content:center;padding:18px 18px 12px;border:1px solid rgba(255,255,255,.12);border-radius:17px;background:rgba(8,16,44,.25);backdrop-filter:blur(10px)}
   .command-charttop{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.command-charttop small{display:block;color:rgba(255,255,255,.55);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em}.command-charttop b{font-size:17px}
   .pace{padding:6px 10px;border-radius:20px;background:rgba(255,255,255,.09);font-size:11px;font-weight:700;color:#FFE09A}
   .command-chart{margin-top:14px;min-height:210px;display:flex;align-items:center}.command-chart svg{overflow:visible}
+  .simulator{display:none;margin-top:12px;padding:12px 13px;border:1px solid rgba(255,255,255,.13);border-radius:12px;background:rgba(255,255,255,.06)}.simulator.on{display:block}.simulator-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}.simulator label{font-size:11px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.06em}.simulator output{font-size:22px;font-weight:780;color:#FFD36A}.simulator input{width:100%;accent-color:var(--gold);margin-top:9px}.simulator-result{display:flex;justify-content:space-between;gap:10px;margin-top:7px;font-size:12px;color:rgba(255,255,255,.65)}.simulator-result b{color:#fff}
+  .contribution-card{padding:22px}.contribution-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:16px}.contribution-total{text-align:right;font-size:12px;color:var(--muted)}.contribution-total b{display:block;font-size:24px;color:var(--ink)}
+  .contrib-list{display:flex;flex-direction:column;gap:11px}.contrib-row{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(220px,2fr) 105px;gap:14px;align-items:center}.contrib-name{font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.contrib-track{position:relative;height:20px;border-radius:6px;background:linear-gradient(90deg,var(--surface-2) 0 49.7%,var(--line) 49.7% 50.3%,var(--surface-2) 50.3% 100%);overflow:hidden}.contrib-bar{position:absolute;top:4px;height:12px;border-radius:5px;min-width:3px}.contrib-bar.pos{left:50%;background:var(--good)}.contrib-bar.neg{right:50%;background:var(--crit)}.contrib-value{text-align:right;font-size:12px;color:var(--muted)}.contrib-value b{display:block;font-size:15px}.contrib-value b.pos{color:var(--good)}.contrib-value b.neg{color:var(--crit)}
+  @media(max-width:680px){.contribution-head{flex-direction:column}.contribution-total{text-align:left}.contrib-row{grid-template-columns:1fr 72px}.contrib-track{grid-column:1/-1;grid-row:2}.contrib-value{grid-column:2;grid-row:1}}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 5px rgba(84,217,155,.11)}50%{box-shadow:0 0 0 10px rgba(84,217,155,0)}}
   @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}.command>*{animation:rise .5s ease both}.command-visual{animation-delay:.1s}
   @media(max-width:900px){.command{grid-template-columns:1fr;padding:26px}.command-number{font-size:64px}.command-visual{min-height:285px}}
@@ -246,11 +251,16 @@
   <!-- ============ VENTA ============ -->
   <section class="view on" id="v-venta">
     <div class="command" id="wowHero"></div>
-    <div class="kpis" id="vtKpis"></div>
-    <h2 class="sec">Cumplimiento</h2>
-    <div class="g2">
-      <div class="card" style="text-align:center;display:flex;flex-direction:column;justify-content:center" id="vtGauge"></div>
-      <div class="card" style="display:flex;flex-direction:column;justify-content:center" id="vtMeta"></div>
+    <div hidden id="vtKpis"></div>
+    <div hidden id="vtGauge"></div>
+    <div hidden id="vtMeta"></div>
+    <h2 class="sec">Qué cambió</h2>
+    <div class="card contribution-card">
+      <div class="contribution-head">
+        <div><h3>Contribución al crecimiento por canal</h3><p class="hint">Qué canales explican la diferencia frente al período anterior</p></div>
+        <div class="contribution-total" id="wrContributionTotal"></div>
+      </div>
+      <div id="wrContribution"></div>
     </div>
     <h2 class="sec">Comportamiento de la venta</h2>
     <div class="card">
@@ -335,14 +345,12 @@
       <div class="card"><h3>Por sucursal</h3><p class="hint">Dónde se atiende</p><div id="eqSuc"></div></div>
       <div class="card"><h3>Origen del cliente</h3><p class="hint">De dónde viene la venta</p><div id="eqOri"></div></div>
     </div>
-    <h2 class="sec">Pendiente</h2>
-    <div class="pending" id="eqPend"></div>
+    <div hidden id="eqPend"></div>
   </section>
 
   <footer>
     <div>Para actualizar: deja en esta carpeta <b>ventas_nuevas.csv</b>, <b>recaudacion.csv</b> y el <b>Registro de Ventas</b>, ejecuta <b>Actualizar_datos.bat</b> y refresca (F5).</div>
     <div>Metas: FFVV Interna <b id="fMetaCx">—</b> pólizas/mes · todos los canales <b id="fMetaTot">—</b> pólizas/mes.</div>
-    <div class="sec-note">⚠ Seguridad: el correo original traía la contraseña del SFTP en texto plano. Conviene rotarla y no guardarla en archivos sueltos.</div>
   </footer>
 </div>
 
@@ -503,6 +511,65 @@
     }).join('')+'</div>'):'<p class="empty">Sin datos con estos filtros.</p>';
   }
 
+  function renderWarRoom(Vs,Vp,n,promAct,dl){
+    var ultimoMes=meses[meses.length-1], esMesCierre=F.desde===F.hasta&&F.hasta===ultimoMes;
+    var yy=+F.hasta.slice(0,4), mm=+F.hasta.slice(5,7), diasMes=new Date(yy,mm,0).getDate();
+    var fechasCorte=V.filter(function(v){return enRango(v,F.desde,F.hasta);}).map(function(v){return v.fecha||'';}).filter(Boolean).sort();
+    var fechaCorte=fechasCorte[fechasCorte.length-1]||'', diaCorte=esMesCierre?(+fechaCorte.slice(8,10)||diasMes):diasMes;
+    var diasRest=Math.max(0,diasMes-diaCorte), metaConfiable=!F.clinica&&!F.canal&&!F.detalle;
+    var meta=METATOT*n, proyeccion=esMesCierre&&diaCorte?Math.round(Vs.length/diaCorte*diasMes):(F.desde===F.hasta?Vs.length:Math.round(promAct));
+    var brecha=metaConfiable?proyeccion-meta:null, reqDia=metaConfiable&&diasRest?Math.ceil(Math.max(0,meta-Vs.length)/diasRest):0;
+    var estadoRitmo=!metaConfiable?'Vista filtrada':(brecha>=0?'Meta al alcance':(proyeccion/meta>=.85?'Cierre desafiante':'Cierre en riesgo'));
+    var gc=grp(Vs,'canal'), gp=Vp?grp(Vp,'canal'):{};
+    var topCanal=Object.keys(gc).sort(function(a,b){return gc[b]-gc[a];})[0]||'—';
+    var topPct=Vs.length&&topCanal!=='—'?Math.round(gc[topCanal]/Vs.length*100):0;
+    var riesgo=Object.keys(gp).filter(function(k){return gp[k]>0;}).sort(function(a,b){return ((gc[a]||0)-gp[a])-((gc[b]||0)-gp[b]);})[0]||'—';
+    var riesgoPct=riesgo!=='—'&&gp[riesgo]?Math.round(((gc[riesgo]||0)/gp[riesgo]-1)*100):0;
+    var variacion=dl.n===null?'Sin período comparable':((dl.n>=0?'▲ ':'▼ ')+Math.abs(Math.round(dl.n))+'% vs período anterior');
+    var insight;
+    if(!Vs.length) insight='No hay ventas para la combinación seleccionada. Amplía el rango o quita un filtro para recuperar la lectura ejecutiva.';
+    else if(metaConfiable&&brecha<0) insight='El total acelera, pero el crecimiento está concentrado. Para cerrar la meta se requieren '+N(reqDia)+' ventas diarias durante los '+N(diasRest)+' días restantes; conviene recuperar '+canalNom(riesgo)+' sin perder la tracción de '+canalNom(topCanal)+'.';
+    else if(metaConfiable) insight='La meta está al alcance. '+canalNom(topCanal)+' explica el '+topPct+'% de la venta; el foco es sostener el ritmo y contener la caída de '+canalNom(riesgo)+'.';
+    else insight='Esta es una vista filtrada. '+canalNom(topCanal)+' concentra el '+topPct+'% del segmento y '+canalNom(riesgo)+' presenta la mayor caída frente al período anterior.';
+
+    var grafico='', serie=[];
+    if(F.desde===F.hasta){
+      var porDia={},acum=0;
+      Vs.forEach(function(v){if(v.fecha)porDia[+v.fecha.slice(8,10)]=(porDia[+v.fecha.slice(8,10)]||0)+1;});
+      for(var d=1;d<=diaCorte;d++){acum+=porDia[d]||0;serie.push(acum);}
+      if(!serie.length)serie=[0];
+      var W=520,H=210,pad=14,maxY=Math.max.apply(null,serie.concat([metaConfiable?meta:proyeccion,1]))*1.06;
+      var x=function(day){return pad+(day-1)/Math.max(1,diasMes-1)*(W-pad*2);};
+      var y=function(val){return H-pad-(val/maxY*(H-42));};
+      var pts=serie.map(function(v,i){return [x(i+1),y(v)];});
+      var linea=pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' ');
+      var area=pad+','+(H-pad)+' '+linea+' '+x(diaCorte)+','+(H-pad);
+      var objetivo=metaConfiable?('<line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+x(diasMes)+'" y2="'+y(meta)+'" stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-dasharray="6 6"/><text x="'+(x(diasMes)-2)+'" y="'+(y(meta)-8)+'" text-anchor="end" font-size="10" fill="rgba(255,255,255,.72)">Meta '+N(meta)+'</text>'):'';
+      var proyectada=esMesCierre?('<line x1="'+x(diaCorte)+'" y1="'+y(serie[serie.length-1])+'" x2="'+x(diasMes)+'" y2="'+y(proyeccion)+'" stroke="#5ED4E8" stroke-width="3" stroke-dasharray="5 6"/><circle cx="'+x(diasMes)+'" cy="'+y(proyeccion)+'" r="5" fill="#5ED4E8"/><text x="'+(x(diasMes)-2)+'" y="'+(y(proyeccion)+18)+'" text-anchor="end" font-size="10" fill="#8BE6F4">Proy. '+N(proyeccion)+'</text>'):'';
+      grafico='<svg viewBox="0 0 '+W+' '+(H+16)+'" width="100%" aria-label="Avance real, proyección y meta"><defs><linearGradient id="heroAreaPro" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E8A317" stop-opacity=".52"/><stop offset="100%" stop-color="#E8A317" stop-opacity=".02"/></linearGradient></defs><line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" stroke="rgba(255,255,255,.16)"/>'+objetivo+'<polygon points="'+area+'" fill="url(#heroAreaPro)"/><polyline points="'+linea+'" fill="none" stroke="#FFD36A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'+proyectada+'<circle cx="'+x(diaCorte)+'" cy="'+y(serie[serie.length-1])+'" r="6" fill="#FFD36A" stroke="#fff" stroke-width="3"/><text x="'+pad+'" y="'+(H+9)+'" text-anchor="start" font-size="10" fill="rgba(255,255,255,.48)">Día 1</text><text x="'+x(diaCorte)+'" y="'+(H+9)+'" text-anchor="middle" font-size="10" fill="#FFD36A">Corte '+diaCorte+'</text><text x="'+(W-pad)+'" y="'+(H+9)+'" text-anchor="end" font-size="10" fill="rgba(255,255,255,.48)">Día '+diasMes+'</text></svg>';
+    }else{
+      var mesesVista=meses.filter(function(m){return m>=F.desde&&m<=F.hasta;});
+      serie=mesesVista.map(function(m){return Vs.filter(function(v){return v.fecha&&v.fecha.slice(0,7)===m;}).length;});
+      var W2=520,H2=210,pad2=18,max2=Math.max.apply(null,serie.concat([1])),slot=(W2-pad2*2)/Math.max(1,serie.length);
+      grafico='<svg viewBox="0 0 '+W2+' '+(H2+16)+'" width="100%" aria-label="Ventas por mes">'+serie.map(function(v,i){var bh=v/max2*(H2-48),bx=pad2+i*slot+slot*.18,bw=slot*.64,by=H2-pad2-bh;return '<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="6" fill="#FFD36A"/><text x="'+(bx+bw/2)+'" y="'+(by-7)+'" text-anchor="middle" font-size="11" fill="#fff">'+N(v)+'</text><text x="'+(bx+bw/2)+'" y="'+(H2+7)+'" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.5)">'+mesCorto(mesesVista[i])+'</text>';}).join('')+'</svg>';
+    }
+    var brechaTxt=metaConfiable?(brecha>=0?'+'+N(brecha):N(brecha)):'—';
+    $('wowHero').innerHTML='<div class="command-copy"><div class="command-eyebrow"><span class="live-dot"></span>War Room Comercial · cierre al '+(fechaCorte||etiqRango())+'</div><div class="command-main"><div class="command-number tnum">'+N(proyeccion)+'</div><div class="command-unit">'+(metaConfiable?'proyectadas<br>de una meta '+N(meta):'proyección<br>del segmento')+'</div></div><div class="command-delta'+(metaConfiable&&brecha<0?' down':'')+'">'+(metaConfiable?'Brecha proyectada '+brechaTxt:variacion)+'</div><div class="command-insight">'+insight+'</div><div class="command-actions">'+(riesgo!=='—'?'<button class="command-action" id="wrRiskBtn">Ver caída de '+canalNom(riesgo)+'</button>':'')+'<button class="command-action primary" id="wrSimBtn">Simular cierre</button></div><div class="command-metrics"><div class="command-metric"><b>'+N(Vs.length)+' <small style="font-size:12px;color:'+(dl.n!==null&&dl.n>=0?'#7EE8B5':'#FF9F9F')+'">'+(dl.n===null?'':dl.t)+'</small></b><span>Ventas actuales</span></div><div class="command-metric"><b>'+canalNom(topCanal)+'</b><span>Motor · '+N(gc[topCanal]||0)+' / '+topPct+'%</span></div><div class="command-metric"><b>'+canalNom(riesgo)+'</b><span>Riesgo · '+N(gc[riesgo]||0)+' / '+(riesgoPct>0?'+':'')+riesgoPct+'%</span></div></div></div><div class="command-visual"><div class="command-charttop"><div><small>Real vs proyección vs meta</small><b>'+estadoRitmo+'</b></div><span class="pace">'+(metaConfiable&&diasRest?N(reqDia)+' ventas/día':'Lectura del período')+'</span></div><div class="command-chart">'+grafico+'</div><div class="simulator" id="wrSimulator"><div class="simulator-row"><label>Ventas diarias desde el corte</label><output id="wrDailyVal">'+N(reqDia)+'</output></div><input id="wrDaily" type="range" min="0" max="'+Math.max(50,reqDia*2)+'" value="'+reqDia+'"><div class="simulator-result"><span>Cierre simulado</span><b id="wrSimResult">'+N(Vs.length+reqDia*diasRest)+' ventas</b></div></div></div>';
+    if($('wrRiskBtn'))$('wrRiskBtn').addEventListener('click',function(){F.canal=riesgo;render();setTimeout(function(){$('vtTorta').scrollIntoView({behavior:'smooth',block:'center'});},50);});
+    $('wrSimBtn').addEventListener('click',function(){$('wrSimulator').classList.toggle('on');});
+    $('wrDaily').addEventListener('input',function(){$('wrDailyVal').textContent=N(+this.value);$('wrSimResult').textContent=N(Vs.length+(+this.value)*diasRest)+' ventas';});
+
+    if(!Vp){$('wrContribution').innerHTML='<p class="empty">No existe un período previo equivalente para comparar.</p>';$('wrContributionTotal').innerHTML='';return;}
+    var ga=grp(Vs,'canal'), gb=grp(Vp,'canal'), keys={}, filas=[];
+    Object.keys(ga).forEach(function(k){keys[k]=1;});Object.keys(gb).forEach(function(k){keys[k]=1;});
+    Object.keys(keys).forEach(function(k){filas.push({k:k,a:ga[k]||0,b:gb[k]||0,d:(ga[k]||0)-(gb[k]||0)});});
+    filas.sort(function(a,b){return Math.abs(b.d)-Math.abs(a.d);});
+    var maxAbs=Math.max.apply(null,filas.map(function(x){return Math.abs(x.d);}).concat([1]));
+    var totalDelta=Vs.length-Vp.length,totalPct=Vp.length?Math.round(totalDelta/Vp.length*100):0;
+    $('wrContributionTotal').innerHTML='<b style="color:'+(totalDelta>=0?'var(--good)':'var(--crit)')+'">'+(totalDelta>=0?'+':'')+N(totalDelta)+'</b>'+(totalPct>=0?'+':'')+totalPct+'% neto';
+    $('wrContribution').innerHTML='<div class="contrib-list">'+filas.map(function(x){var cls=x.d>=0?'pos':'neg',w=Math.abs(x.d)/maxAbs*48;return '<div class="contrib-row"><div class="contrib-name" title="'+canalNom(x.k)+'">'+canalNom(x.k)+'</div><div class="contrib-track"><div class="contrib-bar '+cls+'" style="width:'+w+'%"></div></div><div class="contrib-value"><b class="'+cls+'">'+(x.d>=0?'+':'')+N(x.d)+'</b>'+N(x.b)+' → '+N(x.a)+'</div></div>';}).join('')+'</div>';
+  }
+
   // ================= RENDER =================
   function render(){
     pintaFiltros();
@@ -565,6 +632,8 @@
         '<div class="command-visual"><div class="command-charttop"><div><small>'+(F.desde===F.hasta?'Curva acumulada':'Evolución del período')+'</small><b>'+estadoRitmo+'</b></div><span class="pace">'+Math.round(ritmo*100)+'% del ritmo esperado</span></div>'+
         '<div class="command-chart">'+grafico+'</div></div>';
     })();
+
+    renderWarRoom(Vs,Vp,n,promAct,dl);
 
     $('vtKpis').innerHTML=[
       {l:'Ventas',v:N(Vs.length),f:etiqRango()+(n>1?(' · '+n+' meses'):''),a:1},
