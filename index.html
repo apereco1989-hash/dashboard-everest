@@ -100,7 +100,10 @@
   .command-visual{display:flex;flex-direction:column;justify-content:center;padding:18px 18px 12px;border:1px solid rgba(255,255,255,.12);border-radius:17px;background:rgba(8,16,44,.25);backdrop-filter:blur(10px)}
   .command-charttop{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.command-charttop small{display:block;color:rgba(255,255,255,.55);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em}.command-charttop b{font-size:17px}
   .pace{padding:6px 10px;border-radius:20px;background:rgba(255,255,255,.09);font-size:11px;font-weight:700;color:#FFE09A}
-  .command-chart{margin-top:14px;min-height:210px;display:flex;align-items:center}.command-chart svg{overflow:visible}
+  .command-chart{position:relative;margin-top:14px;min-height:210px;display:flex;align-items:center}.command-chart svg{overflow:visible}
+  .day-hit{cursor:crosshair;outline:none}.day-hit rect{fill:transparent;pointer-events:all}.day-hit circle{opacity:0;pointer-events:none;transition:opacity .08s ease}.day-hit:hover circle,.day-hit:focus circle{opacity:1}
+  .chart-tooltip{position:absolute;z-index:5;left:0;top:0;min-width:168px;padding:10px 12px;border:1px solid rgba(255,255,255,.2);border-radius:11px;background:rgba(7,20,45,.96);box-shadow:0 12px 30px rgba(0,0,0,.3);color:#fff;pointer-events:none;opacity:0;transform:translate(-50%,-105%);transition:opacity .06s ease;line-height:1.25}
+  .chart-tooltip.on{opacity:1}.chart-tooltip b{display:block;font-size:12px;color:#FFD36A;margin-bottom:4px}.chart-tooltip span{display:block;font-size:15px;font-weight:750}.chart-tooltip small{display:block;margin-top:4px;color:rgba(255,255,255,.66);font-size:10.5px}
   .simulator{display:none;margin-top:12px;padding:12px 13px;border:1px solid rgba(255,255,255,.13);border-radius:12px;background:rgba(255,255,255,.06)}.simulator.on{display:block}.simulator-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}.simulator label{font-size:11px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.06em}.simulator output{font-size:22px;font-weight:780;color:#FFD36A}.simulator input{width:100%;accent-color:var(--gold);margin-top:9px}.simulator-result{display:flex;justify-content:space-between;gap:10px;margin-top:7px;font-size:12px;color:rgba(255,255,255,.65)}.simulator-result b{color:#fff}
   .trend-room{background:radial-gradient(circle at 12% 5%,rgba(94,212,232,.32),transparent 30%),radial-gradient(circle at 88% 95%,rgba(232,163,23,.28),transparent 34%),linear-gradient(135deg,#0D2447 0%,#113D63 52%,#142B5B 100%)}
   .retention-room{background:radial-gradient(circle at 12% 8%,rgba(232,163,23,.28),transparent 31%),radial-gradient(circle at 88% 92%,rgba(84,217,155,.25),transparent 34%),linear-gradient(135deg,#24183D 0%,#4A2446 52%,#24385A 100%)}
@@ -431,6 +434,29 @@
     var d=(act/ant-1)*100;
     return {t:(d>=0?'+':'')+Math.round(d)+'%', c:d>=0?'var(--good)':'var(--crit)', n:d};
   }
+  function activaTooltipDiario(id){
+    var box=$(id); if(!box) return;
+    var tip=box.querySelector('.chart-tooltip'); if(!tip) return;
+    box.querySelectorAll('.day-hit').forEach(function(g){
+      function mostrar(e){
+        var fecha=g.getAttribute('data-date'), venta=+(g.getAttribute('data-sales')||0), acum=+(g.getAttribute('data-acum')||0);
+        var pFecha=g.getAttribute('data-prev-date'), pVenta=g.getAttribute('data-prev-sales'), pAcum=g.getAttribute('data-prev-acum');
+        var html='<b>'+fecha+'</b><span>'+N(venta)+' '+(venta===1?'venta pagada':'ventas pagadas')+' ese día</span><small>Acumulado: '+N(acum);
+        if(pFecha!==null) html+=' · '+pFecha+': '+N(+pVenta||0)+' del día / '+N(+pAcum||0)+' acumuladas';
+        tip.innerHTML=html+'</small>';
+        tip.classList.add('on');
+        var br=box.getBoundingClientRect(), gr=g.getBoundingClientRect();
+        var x=(e&&e.clientX?e.clientX:(gr.left+gr.right)/2)-br.left;
+        var y=(e&&e.clientY?e.clientY:gr.top)-br.top-8;
+        var mitad=tip.offsetWidth/2+7;
+        x=Math.max(mitad,Math.min(br.width-mitad,x)); y=Math.max(42,y);
+        tip.style.left=x+'px'; tip.style.top=y+'px';
+      }
+      function ocultar(){tip.classList.remove('on');}
+      g.addEventListener('pointerenter',mostrar); g.addEventListener('pointermove',mostrar);
+      g.addEventListener('pointerleave',ocultar); g.addEventListener('focus',mostrar); g.addEventListener('blur',ocultar);
+    });
+  }
 
   // ---------- estado ----------
   var meses=[]; (function(){var s={};PV.concat(V).forEach(function(v){if(v.fecha)s[v.fecha.slice(0,7)]=1;});meses=Object.keys(s).sort();})();
@@ -586,9 +612,15 @@
       var pts=serie.map(function(v,i){return [x(i+1),y(v)];});
       var linea=pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' ');
       var area=pad+','+(H-pad)+' '+linea+' '+x(diaCorte)+','+(H-pad);
+      var anchoDia=(W-pad*2)/Math.max(1,diasMes-1);
+      var hits=serie.map(function(acumDia,i){
+        var dia=i+1, izquierda=Math.max(0,x(dia)-anchoDia/2), ancho=Math.min(W,x(dia)+anchoDia/2)-izquierda;
+        var fecha=(dia<10?'0':'')+dia+'/'+(mm<10?'0':'')+mm+'/'+yy;
+        return '<g class="day-hit" tabindex="0" data-date="'+fecha+'" data-sales="'+(porDia[dia]||0)+'" data-acum="'+acumDia+'"><rect x="'+izquierda.toFixed(1)+'" y="0" width="'+ancho.toFixed(1)+'" height="'+H+'"></rect><circle cx="'+x(dia).toFixed(1)+'" cy="'+y(acumDia).toFixed(1)+'" r="6" fill="#FFD36A" stroke="#fff" stroke-width="3"></circle></g>';
+      }).join('');
       var objetivo=metaConfiable?('<line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+x(diasMes)+'" y2="'+y(meta)+'" stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-dasharray="6 6"/><text x="'+(x(diasMes)-2)+'" y="'+(y(meta)-8)+'" text-anchor="end" font-size="10" fill="rgba(255,255,255,.72)">Meta '+N(meta)+'</text>'):'';
       var proyectada=esMesCierre?('<line x1="'+x(diaCorte)+'" y1="'+y(serie[serie.length-1])+'" x2="'+x(diasMes)+'" y2="'+y(proyeccion)+'" stroke="#5ED4E8" stroke-width="3" stroke-dasharray="5 6"/><circle cx="'+x(diasMes)+'" cy="'+y(proyeccion)+'" r="5" fill="#5ED4E8"/><text x="'+(x(diasMes)-2)+'" y="'+(y(proyeccion)+18)+'" text-anchor="end" font-size="10" fill="#8BE6F4">Est. lineal '+N(proyeccion)+'</text>'):'';
-      grafico='<svg viewBox="0 0 '+W+' '+(H+16)+'" width="100%" aria-label="Ventas pagadas, estimación lineal y meta"><defs><linearGradient id="heroAreaPro" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E8A317" stop-opacity=".52"/><stop offset="100%" stop-color="#E8A317" stop-opacity=".02"/></linearGradient></defs><line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" stroke="rgba(255,255,255,.16)"/>'+objetivo+'<polygon points="'+area+'" fill="url(#heroAreaPro)"/><polyline points="'+linea+'" fill="none" stroke="#FFD36A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'+proyectada+'<circle cx="'+x(diaCorte)+'" cy="'+y(serie[serie.length-1])+'" r="6" fill="#FFD36A" stroke="#fff" stroke-width="3"/><text x="'+pad+'" y="'+(H+9)+'" text-anchor="start" font-size="10" fill="rgba(255,255,255,.48)">Día 1</text><text x="'+x(diaCorte)+'" y="'+(H+9)+'" text-anchor="middle" font-size="10" fill="#FFD36A">Corte '+diaCorte+'</text><text x="'+(W-pad)+'" y="'+(H+9)+'" text-anchor="end" font-size="10" fill="rgba(255,255,255,.48)">Día '+diasMes+'</text></svg>';
+      grafico='<svg viewBox="0 0 '+W+' '+(H+16)+'" width="100%" aria-label="Ventas pagadas, estimación lineal y meta"><defs><linearGradient id="heroAreaPro" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E8A317" stop-opacity=".52"/><stop offset="100%" stop-color="#E8A317" stop-opacity=".02"/></linearGradient></defs><line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" stroke="rgba(255,255,255,.16)"/>'+objetivo+'<polygon points="'+area+'" fill="url(#heroAreaPro)"/><polyline points="'+linea+'" fill="none" stroke="#FFD36A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'+proyectada+hits+'<text x="'+pad+'" y="'+(H+9)+'" text-anchor="start" font-size="10" fill="rgba(255,255,255,.48)">Día 1</text><text x="'+x(diaCorte)+'" y="'+(H+9)+'" text-anchor="middle" font-size="10" fill="#FFD36A">Corte '+diaCorte+'</text><text x="'+(W-pad)+'" y="'+(H+9)+'" text-anchor="end" font-size="10" fill="rgba(255,255,255,.48)">Día '+diasMes+'</text></svg>';
     }else{
       var mesesVista=meses.filter(function(m){return m>=F.desde&&m<=F.hasta;});
       serie=mesesVista.map(function(m){return Vs.filter(function(v){return v.fecha&&v.fecha.slice(0,7)===m;}).length;});
@@ -596,7 +628,8 @@
       grafico='<svg viewBox="0 0 '+W2+' '+(H2+16)+'" width="100%" aria-label="Ventas por mes">'+serie.map(function(v,i){var bh=v/max2*(H2-48),bx=pad2+i*slot+slot*.18,bw=slot*.64,by=H2-pad2-bh;return '<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="6" fill="#FFD36A"/><text x="'+(bx+bw/2)+'" y="'+(by-7)+'" text-anchor="middle" font-size="11" fill="#fff">'+N(v)+'</text><text x="'+(bx+bw/2)+'" y="'+(H2+7)+'" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.5)">'+mesCorto(mesesVista[i])+'</text>';}).join('')+'</svg>';
     }
     var emitidas=V.filter(function(v){return fClin(v)&&enRango(v,F.desde,F.hasta);}).length;
-    $('wowHero').innerHTML='<div class="command-copy"><div class="command-eyebrow"><span class="live-dot"></span>Venta oficial pagada · corte '+(fechaCorte||etiqRango())+'</div><div class="command-main"><div class="command-number tnum">'+N(Vs.length)+'</div><div class="command-unit">'+(metaConfiable?'pagadas<br>de una meta '+N(meta):'ventas<br>pagadas')+'</div></div><div class="command-delta'+(dl.n!==null&&dl.n<0?' down':'')+'">'+variacion+'</div><div class="command-insight">'+insight+'</div><div class="command-actions">'+(riesgo!=='—'?'<button class="command-action" id="wrRiskBtn">Ver caída de '+canalNom(riesgo)+'</button>':'')+'<button class="command-action primary" id="wrSimBtn">Simular cierre</button></div><div class="command-metrics"><div class="command-metric"><b>'+Math.round((meta?Vs.length/meta:0)*100)+'%</b><span>Avance de meta oficial</span></div><div class="command-metric"><b>'+N(proyeccion)+'</b><span>Estimación lineal, no forecast</span></div><div class="command-metric"><b>'+N(emitidas)+'</b><span>Emitidas · dato operativo</span></div></div></div><div class="command-visual"><div class="command-charttop"><div><small>Pagadas vs estimación lineal vs meta</small><b>'+estadoRitmo+'</b></div><span class="pace">'+(metaConfiable&&diasRest?N(reqDia)+' pagos/día para la meta':'Lectura del período')+'</span></div><div class="command-chart">'+grafico+'</div><div class="simulator" id="wrSimulator"><div class="simulator-row"><label>Pagos diarios desde el corte</label><output id="wrDailyVal">'+N(reqDia)+'</output></div><input id="wrDaily" type="range" min="0" max="'+Math.max(50,reqDia*2)+'" value="'+reqDia+'"><div class="simulator-result"><span>Cierre simulado</span><b id="wrSimResult">'+N(Vs.length+reqDia*diasRest)+' pagadas</b></div></div></div>';
+    $('wowHero').innerHTML='<div class="command-copy"><div class="command-eyebrow"><span class="live-dot"></span>Venta oficial pagada · corte '+(fechaCorte||etiqRango())+'</div><div class="command-main"><div class="command-number tnum">'+N(Vs.length)+'</div><div class="command-unit">'+(metaConfiable?'pagadas<br>de una meta '+N(meta):'ventas<br>pagadas')+'</div></div><div class="command-delta'+(dl.n!==null&&dl.n<0?' down':'')+'">'+variacion+'</div><div class="command-insight">'+insight+'</div><div class="command-actions">'+(riesgo!=='—'?'<button class="command-action" id="wrRiskBtn">Ver caída de '+canalNom(riesgo)+'</button>':'')+'<button class="command-action primary" id="wrSimBtn">Simular cierre</button></div><div class="command-metrics"><div class="command-metric"><b>'+Math.round((meta?Vs.length/meta:0)*100)+'%</b><span>Avance de meta oficial</span></div><div class="command-metric"><b>'+N(proyeccion)+'</b><span>Estimación lineal, no forecast</span></div><div class="command-metric"><b>'+N(emitidas)+'</b><span>Emitidas · dato operativo</span></div></div></div><div class="command-visual"><div class="command-charttop"><div><small>Pagadas vs estimación lineal vs meta</small><b>'+estadoRitmo+'</b></div><span class="pace">'+(metaConfiable&&diasRest?N(reqDia)+' pagos/día para la meta':'Lectura del período')+'</span></div><div class="command-chart" id="wrDailyChart">'+grafico+'<div class="chart-tooltip" role="status"></div></div><div class="simulator" id="wrSimulator"><div class="simulator-row"><label>Pagos diarios desde el corte</label><output id="wrDailyVal">'+N(reqDia)+'</output></div><input id="wrDaily" type="range" min="0" max="'+Math.max(50,reqDia*2)+'" value="'+reqDia+'"><div class="simulator-result"><span>Cierre simulado</span><b id="wrSimResult">'+N(Vs.length+reqDia*diasRest)+' pagadas</b></div></div></div>';
+    activaTooltipDiario('wrDailyChart');
     if($('wrRiskBtn'))$('wrRiskBtn').addEventListener('click',function(){F.canal=riesgo;render();setTimeout(function(){$('vtTorta').scrollIntoView({behavior:'smooth',block:'center'});},50);});
     $('wrSimBtn').addEventListener('click',function(){$('wrSimulator').classList.toggle('on');});
     $('wrDaily').addEventListener('input',function(){$('wrDailyVal').textContent=N(+this.value);$('wrSimResult').textContent=N(Vs.length+(+this.value)*diasRest)+' pagadas';});
@@ -635,9 +668,17 @@
       var W=520,H=210,pad=18,maxY=Math.max.apply(null,sa.concat(sp).concat([metaOk?METATOT:1]))*1.05;
       var x=function(i){return pad+i/Math.max(1,diasMes-1)*(W-pad*2);}, y=function(v){return H-pad-v/maxY*(H-46);};
       function puntos(s){return s.map(function(v,i){return x(i).toFixed(1)+','+y(v).toFixed(1);}).join(' ');}
+      var ancho=(W-pad*2)/Math.max(1,diasMes-1), mesNum=+ultimo.slice(5,7), anoNum=+ultimo.slice(0,4);
+      var prevMes=anterior?+anterior.slice(5,7):0, prevAno=anterior?+anterior.slice(0,4):0;
+      var hitsTrend=sa.map(function(acumDia,i){
+        var dia=i+1, izquierda=Math.max(0,x(i)-ancho/2), anchoHit=Math.min(W,x(i)+ancho/2)-izquierda;
+        var fecha=(dia<10?'0':'')+dia+'/'+(mesNum<10?'0':'')+mesNum+'/'+anoNum;
+        var fechaPrev=anterior?((dia<10?'0':'')+dia+'/'+(prevMes<10?'0':'')+prevMes+'/'+prevAno):'';
+        return '<g class="day-hit" tabindex="0" data-date="'+fecha+'" data-sales="'+(da[dia]||0)+'" data-acum="'+acumDia+'"'+(anterior?' data-prev-date="'+fechaPrev+'" data-prev-sales="'+(dp[dia]||0)+'" data-prev-acum="'+(sp[i]||0)+'"':'')+'><rect x="'+izquierda.toFixed(1)+'" y="0" width="'+anchoHit.toFixed(1)+'" height="'+H+'"></rect><circle cx="'+x(i).toFixed(1)+'" cy="'+y(acumDia).toFixed(1)+'" r="6" fill="#FFD36A" stroke="#fff" stroke-width="3"></circle></g>';
+      }).join('');
       visual='<svg viewBox="0 0 '+W+' '+(H+16)+'" width="100%" aria-label="Curvas acumuladas de ventas pagadas comparables">'+
         (metaOk?'<line x1="'+pad+'" y1="'+y(METATOT)+'" x2="'+(W-pad)+'" y2="'+y(METATOT)+'" stroke="rgba(255,255,255,.45)" stroke-dasharray="6 6"/><text x="'+(W-pad)+'" y="'+(y(METATOT)-7)+'" text-anchor="end" font-size="10" fill="rgba(255,255,255,.65)">Meta '+N(METATOT)+'</text>':'')+
-        '<polyline points="'+puntos(sp)+'" fill="none" stroke="#5ED4E8" stroke-width="3" stroke-linecap="round"/><polyline points="'+puntos(sa)+'" fill="none" stroke="#FFD36A" stroke-width="4" stroke-linecap="round"/>'+
+        '<polyline points="'+puntos(sp)+'" fill="none" stroke="#5ED4E8" stroke-width="3" stroke-linecap="round"/><polyline points="'+puntos(sa)+'" fill="none" stroke="#FFD36A" stroke-width="4" stroke-linecap="round"/>'+hitsTrend+
         '<text x="'+pad+'" y="'+(H+8)+'" font-size="10" fill="rgba(255,255,255,.5)">Día 1</text><text x="'+(W-pad)+'" y="'+(H+8)+'" text-anchor="end" font-size="10" fill="rgba(255,255,255,.5)">Corte '+corte+'</text></svg>'+
         '<div class="room-caption"><span style="color:#FFD36A">●</span> '+mesCorto(ultimo)+' '+N(actual)+' &nbsp; <span style="color:#5ED4E8">●</span> '+(anterior?mesCorto(anterior):'Previo')+' '+N(previo)+' · mismo día de corte.</div>';
     }else{
@@ -652,7 +693,8 @@
       '<div class="command-delta'+(delta!==null&&delta<0?' down':'')+'">'+(delta===null?'Sin período comparable':((delta>=0?'+':'')+delta+'% vs '+mesCorto(anterior)+' al mismo corte'))+'</div><div class="command-insight">'+insight+'</div>'+
       '<div class="command-actions">'+(!F.canal&&riesgo!=='—'?'<button class="command-action" id="tdRiskBtn">Aislar riesgo '+canalNom(riesgo)+'</button>':'')+'<button class="command-action primary" id="tdPatternBtn">Ver aporte por canal</button></div>'+
       '<div class="command-metrics"><div class="command-metric"><b>'+(metaOk?Math.round(actual/METATOT*100)+'%':N(previo))+'</b><span>'+(metaOk?'Avance de meta oficial':'Período comparable')+'</span></div><div class="command-metric"><b>'+(metaOk?N(brecha):canalNom(motor))+'</b><span>'+(metaOk?'Brecha a la meta':'Mayor aporte neto')+'</span></div><div class="command-metric"><b>'+N(proy)+'</b><span>Estimación lineal, no forecast</span></div></div></div>'+
-      '<div class="command-visual"><div class="command-charttop"><div><small>Comparación acumulada</small><b>Mismo día de corte</b></div><span class="pace">'+(metaOk&&diasRest?N(reqDia)+' pagos/día para la meta':(actual-previo>=0?'+':'')+N(actual-previo)+' netas')+'</span></div>'+visual+'</div>';
+      '<div class="command-visual"><div class="command-charttop"><div><small>Comparación acumulada</small><b>Mismo día de corte</b></div><span class="pace">'+(metaOk&&diasRest?N(reqDia)+' pagos/día para la meta':(actual-previo>=0?'+':'')+N(actual-previo)+' netas')+'</span></div><div class="command-chart" id="tdDailyChart" style="display:block">'+visual+'<div class="chart-tooltip" role="status"></div></div></div>';
+    activaTooltipDiario('tdDailyChart');
     if($('tdRiskBtn'))$('tdRiskBtn').addEventListener('click',function(){F.canal=riesgo;render();});
     $('tdPatternBtn').addEventListener('click',function(){$('tdEvo').scrollIntoView({behavior:'smooth',block:'center'});});
   }
